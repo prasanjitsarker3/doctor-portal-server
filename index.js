@@ -29,6 +29,7 @@ async function run() {
         const appointmentCollection = client.db("doctorPortalDB").collection("appointmentOptions")
         const bookingCollection = client.db("doctorPortalDB").collection("booking")
         const usersCollection = client.db("doctorPortalDB").collection("users")
+        const doctorsCollection = client.db("doctorPortalDB").collection("doctors")
 
 
 
@@ -70,6 +71,18 @@ async function run() {
             }
             const result = await bookingCollection.insertOne(booking);
 
+            res.send(result)
+        })
+        app.get("/booking/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await bookingCollection.findOne(query)
+            res.send(result)
+        })
+        //Add Doctors Information
+        app.get("/appointmentSpecialty", async (req, res) => {
+            const query = {}
+            const result = await appointmentCollection.find(query).project({ name: 1 }).toArray()
             res.send(result)
         })
         //User Collection 
@@ -126,6 +139,40 @@ async function run() {
             const result = { isAdmin: user && user.role === 'admin' };
             res.send(result);
         });
+        //Doctors Information 
+        app.get("/doctors", async (req, res) => {
+            const query = {}
+            const result = await doctorsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.post("/doctors", async (req, res) => {
+            const doctor = req.body;
+            const result = await doctorsCollection.insertOne(doctor);
+            res.send(result)
+
+        })
+
+        app.delete("/doctors/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await doctorsCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
+        //Add price in appointment section
+        app.get("/addPrice", async (req, res) => {
+            const filter = {};
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    price: 100
+                }
+            }
+            const result = await appointmentCollection.updateMany(filter, updateDoc, options);
+            res.send(result)
+        })
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
