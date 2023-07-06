@@ -4,6 +4,7 @@ const cors = require('cors')
 const port = process.env.PORT || 5000;
 var jwt = require('jsonwebtoken');
 require('dotenv').config()
+const stripe = require('stripe')(process.env.paymentKey)
 
 //Middle Ware  doctor-portal YtYHyYWg7pzV0Hxc
 app.use(cors())
@@ -30,6 +31,7 @@ async function run() {
         const bookingCollection = client.db("doctorPortalDB").collection("booking")
         const usersCollection = client.db("doctorPortalDB").collection("users")
         const doctorsCollection = client.db("doctorPortalDB").collection("doctors")
+        const paymentCollection = client.db("doctorPortalDB").collection("payments")
 
 
 
@@ -173,7 +175,42 @@ async function run() {
             const result = await appointmentCollection.updateMany(filter, updateDoc, options);
             res.send(result)
         })
+
+        app.post('/create-payment', async (req, res) => {
+            const booking = req.body;
+            const amount = booking.price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: 'INR',
+                amount: amount,
+                payment_method_types: ['card']
+            })
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+
+        })
+
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const result = await paymentCollection.insertOne(payment);
+            const id = payment.bookingId;
+            const filter = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updateResult = await bookingCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+
+
+
         await client.db("admin").command({ ping: 1 });
+
+
+
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
