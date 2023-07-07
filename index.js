@@ -32,6 +32,7 @@ async function run() {
         const usersCollection = client.db("doctorPortalDB").collection("users")
         const doctorsCollection = client.db("doctorPortalDB").collection("doctors")
         const paymentCollection = client.db("doctorPortalDB").collection("payments")
+        const consultationCollection = client.db("doctorPortalDB").collection("consultations")
 
 
 
@@ -204,7 +205,18 @@ async function run() {
             const updateResult = await bookingCollection.updateOne(filter, updateDoc)
             res.send(result)
         })
+        //Consulations information 
 
+        app.get('/consultation', async (req, res) => {
+            const query = {}
+            const result = await consultationCollection.find(query).toArray();
+            res.send(result)
+        })
+        app.get("/consultationSpecialty", async (req, res) => {
+            const query = {}
+            const result = await appointmentCollection.find(query).project({ slots: 1 }).toArray()
+            res.send(result)
+        })
 
 
         await client.db("admin").command({ ping: 1 });
