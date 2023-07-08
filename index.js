@@ -33,6 +33,7 @@ async function run() {
         const doctorsCollection = client.db("doctorPortalDB").collection("doctors")
         const paymentCollection = client.db("doctorPortalDB").collection("payments")
         const consultationCollection = client.db("doctorPortalDB").collection("consultations")
+        const bookedConsultCollection = client.db("doctorPortalDB").collection("booked")
 
 
 
@@ -218,6 +219,43 @@ async function run() {
             res.send(result)
         })
 
+        app.post("/consulBooking", async (req, res) => {
+            const consult = req.body;
+            console.log(consult);
+            const result = await bookedConsultCollection.insertOne(consult);
+            res.send(result)
+        })
+
+        app.get("/consult", async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const result = await bookedConsultCollection.find(query).toArray();
+            res.send(result);
+        })
+        app.delete("/consult/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await bookedConsultCollection.deleteOne(query)
+            res.send(result);
+        })
+        app.get('/consultAllBooking', async (req, res) => {
+            const query = {}
+            const result = await bookedConsultCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.patch("/consultAllBooking/pending/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    status: "approved"
+                }
+            }
+            const result = await bookedConsultCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
 
         await client.db("admin").command({ ping: 1 });
 
